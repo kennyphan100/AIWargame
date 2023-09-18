@@ -226,7 +226,23 @@ class Options:
     max_turns : int | None = 100
     randomize_moves : bool = True
     broker : str | None = None
-
+    
+    def set_max_turns(self):
+        while True:
+            try:
+                max_turns = int(input("Enter a maximum number of turns or enter 0 for default maximum number of turns: "))
+                if max_turns < 0:
+                    raise ValueError
+                elif max_turns == 0:
+                    print("The maximum number of turns has been set to 100 by default.")
+                    break
+                else:
+                    self.max_turns = max_turns
+                    print("The maximum number of turns has been set to " + str(self.max_turns) + ".")
+                    break
+            except ValueError:
+                print("Error! Please enter a valid number. Try again...")
+                
 ##############################################################################################################
 
 @dataclass(slots=True)
@@ -553,6 +569,7 @@ def main():
 
     # set up game options
     options = Options(game_type=game_type)
+    options.set_max_turns()
 
     # override class defaults via command line options
     if args.max_depth is not None:
