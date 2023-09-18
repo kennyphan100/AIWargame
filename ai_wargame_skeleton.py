@@ -226,22 +226,6 @@ class Options:
     max_turns : int | None = 100
     randomize_moves : bool = True
     broker : str | None = None
-    
-    def set_max_turns(self):
-        while True:
-            try:
-                max_turns = int(input("Enter a maximum number of turns or enter 0 for default maximum number of turns: "))
-                if max_turns < 0:
-                    raise ValueError
-                elif max_turns == 0:
-                    print("The maximum number of turns has been set to 100 by default.")
-                    break
-                else:
-                    self.max_turns = max_turns
-                    print("The maximum number of turns has been set to " + str(self.max_turns) + ".")
-                    break
-            except ValueError:
-                print("Error! Please enter a valid number. Try again...")
                 
 ##############################################################################################################
 
@@ -555,6 +539,7 @@ def main():
     parser.add_argument('--max_time', type=float, help='maximum search time')
     parser.add_argument('--game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
     parser.add_argument('--broker', type=str, help='play via a game broker')
+    parser.add_argument('max_turns', type=int, help='maximum number of turns')
     args = parser.parse_args()
 
     # parse the game type
@@ -566,10 +551,12 @@ def main():
         game_type = GameType.AttackerVsDefender
     else:
         game_type = GameType.CompVsComp
-
+        
+    #parse the maximum number of turns
+    max_turns = args.max_turns
+    
     # set up game options
-    options = Options(game_type=game_type)
-    options.set_max_turns()
+    options = Options(game_type=game_type, max_turns=max_turns)
 
     # override class defaults via command line options
     if args.max_depth is not None:
