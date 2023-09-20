@@ -325,6 +325,9 @@ class Game:
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
+        elif self.is_valid_to_attack(coords):
+            self.attack(coords)
+            return (True, "")
         return (False,"invalid move")
 
     def next_turn(self):
@@ -530,6 +533,40 @@ class Game:
         except Exception as error:
             print(f"Broker error: {error}")
         return None
+    
+    def is_valid_to_attack(self, coords: CoordPair) -> bool:
+        src = coords.src
+        dst = coords.dst
+        src_row = src.to_string()[0:1]
+        src_col = src.to_string()[-1]
+        dst_row = dst.to_string()[0:1]
+        dst_col = dst.to_string()[-1]
+        
+        # if self.get(src).to_string()[0:1] == self.get(dst).to_string()[0:1]:
+        #     return False
+        if self.get(src):
+            if self.get(src).player == self.get(dst).player:
+                return False
+            else:
+                if src_row == dst_row and abs(ord(src_col) - ord(dst_col)) == 1:
+                    return True
+                elif src_col == dst_col and abs(ord(src_row) - ord(dst_row)) == 1:
+                    return True
+                else:
+                    return False
+        else:
+            return False
+            
+    def attack(self, coords: CoordPair) -> None:
+        src_unit = self.get(coords.src)
+        dst_unit = self.get(coords.dst)
+        
+        amount = src_unit.damage_amount(dst_unit)
+        src_unit.health = src_unit.health - amount
+        dst_unit.health = dst_unit.health - amount
+        
+        self.remove_dead(coords.src)
+        self.remove_dead(coords.dst)
 
 ##############################################################################################################
 
