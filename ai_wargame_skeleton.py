@@ -312,8 +312,8 @@ class Game:
     def is_engaged_in_combat(self, coord : Coord) -> bool:
         left = Coord(coord.row, coord.col-1)
         right = Coord(coord.row, coord.col+1)
-        top = Coord(coord.row+1, coord.col)
-        bottom =  Coord(coord.row-1, coord.col)
+        top = Coord(coord.row-1, coord.col)
+        bottom =  Coord(coord.row+1, coord.col)
 
         if self.is_valid_coord(left) and self.get(left) and self.get(left).player != self.get(coord).player:
             return True
@@ -326,16 +326,16 @@ class Game:
         return False
 
     def is_move_down(self, coords : CoordPair) -> bool:
-        return ([coords.src.row, coords.src.col] == [coords.dst.row-1, coords.dst.col])
+        return ([coords.src.row+1, coords.src.col] == [coords.dst.row, coords.dst.col])
     
     def is_move_right(self, coords : CoordPair) -> bool:
-        return ([coords.src.row, coords.src.col] == [coords.dst.row, coords.dst.col-1])
+        return ([coords.src.row, coords.src.col+1] == [coords.dst.row, coords.dst.col])
     
     def is_move_up(self, coords : CoordPair) -> bool:
-        return ([coords.src.row, coords.src.col] == [coords.dst.row+1, coords.dst.col])
+        return ([coords.src.row-1, coords.src.col] == [coords.dst.row+1, coords.dst.col])
     
     def is_move_left(self, coords : CoordPair) -> bool:
-        return ([coords.src.row, coords.src.col] == [coords.dst.row, coords.dst.col+1])
+        return ([coords.src.row, coords.src.col-1] == [coords.dst.row, coords.dst.col])
 
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
