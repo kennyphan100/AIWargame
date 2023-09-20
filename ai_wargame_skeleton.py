@@ -539,7 +539,7 @@ class Game:
         src = coords.src
         dst = coords.dst
         
-        if self.get(src) and self.get(src).player == self.next_player and self.get(src).player != self.get(dst).player:
+        if self.get(src) and self.get(dst) and self.get(src).player == self.next_player and self.get(src).player != self.get(dst).player:
             return self.is_adjacent(src, dst)
         else:
             return False
