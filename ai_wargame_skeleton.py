@@ -325,6 +325,9 @@ class Game:
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
+        elif self.is_valid_to_attack(coords):
+            self.attack(coords)
+            return (True, "")
         return (False,"invalid move")
 
     def next_turn(self):
@@ -530,6 +533,37 @@ class Game:
         except Exception as error:
             print(f"Broker error: {error}")
         return None
+    
+    # Check if a unit can attack another unit
+    def is_valid_to_attack(self, coords: CoordPair) -> bool:
+        src = coords.src
+        dst = coords.dst
+        
+        if self.get(src) and self.get(dst) and self.get(src).player == self.next_player and self.get(src).player != self.get(dst).player:
+            return self.is_adjacent(src, dst)
+        else:
+            return False
+    
+    # Attack action
+    def attack(self, coords: CoordPair) -> None:
+        src_unit = self.get(coords.src)
+        dst_unit = self.get(coords.dst)
+        
+        amount = src_unit.damage_amount(dst_unit)
+        src_unit.health = src_unit.health - amount
+        dst_unit.health = dst_unit.health - amount
+        
+        self.remove_dead(coords.src)
+        self.remove_dead(coords.dst)
+    
+    # Check if a unit is adjacent to another unit
+    def is_adjacent(self, src : Coord, dst: Coord) -> bool:
+        if src.row == dst.row and abs(src.col - dst.col) == 1:
+            return True
+        elif src.col == dst.col and abs(src.row - dst.row) == 1:
+            return True
+        else:
+            return False
 
 ##############################################################################################################
 
