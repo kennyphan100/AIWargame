@@ -554,12 +554,9 @@ def main():
         game_type = GameType.AttackerVsDefender
     else:
         game_type = GameType.CompVsComp
-        
-    #parse the maximum number of turns
-    max_turns = args.max_turns
     
     # set up game options
-    options = Options(game_type=game_type, max_turns=max_turns)
+    options = Options(game_type=game_type)
 
     # override class defaults via command line options
     if args.max_depth is not None:
@@ -568,6 +565,8 @@ def main():
         options.max_time = args.max_time
     if args.broker is not None:
         options.broker = args.broker
+    if args.max_turns is not None:
+        options.max_turns = args.max_turns
 
     # create a new game
     game = Game(options=options)
