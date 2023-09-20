@@ -330,6 +330,12 @@ class Game:
     
     def is_move_right(self, coords : CoordPair) -> bool:
         return ([coords.src.row, coords.src.col] == [coords.dst.row, coords.dst.col-1])
+    
+    def is_move_up(self, coords : CoordPair) -> bool:
+        return ([coords.src.row, coords.src.col] == [coords.dst.row+1, coords.dst.col])
+    
+    def is_move_left(self, coords : CoordPair) -> bool:
+        return ([coords.src.row, coords.src.col] == [coords.dst.row, coords.dst.col+1])
 
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
@@ -345,6 +351,10 @@ class Game:
    
         # === RETURN FALSE FOR MOVE DOWN OR MOVE RIGHT FOR THE ATTACKER'S AI, Firewall, and Program ===
         if unit.player == Player.Attacker and (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and (self.is_move_down(coords) or self.is_move_right(coords)):
+            return False
+        
+        # === RETURN FALSE FOR MOVE UP OR MOVE LEFT FOR THE DEFENDER'S AI, Firewall, and Program ===
+        if unit.player == Player.Defender and (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and (self.is_move_up(coords) or self.is_move_left(coords)):
             return False
         
         unit = self.get(coords.dst)
