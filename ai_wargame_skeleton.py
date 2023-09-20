@@ -539,11 +539,8 @@ class Game:
         src = coords.src
         dst = coords.dst
         
-        if self.get(src) and self.get(src).player == self.next_player:
-            if self.get(src).player == self.get(dst).player:
-                return False
-            else:
-                return self.is_adjacent(src, dst)
+        if self.get(src) and self.get(src).player == self.next_player and self.get(src).player != self.get(dst).player:
+            return self.is_adjacent(src, dst)
         else:
             return False
     
@@ -562,9 +559,9 @@ class Game:
     # Check if a unit is adjacent to another unit
     def is_adjacent(self, src : Coord, dst: Coord) -> bool:
         if src.row == dst.row and abs(src.col - dst.col) == 1:
-                    return True
+            return True
         elif src.col == dst.col and abs(src.row - dst.row) == 1:
-                    return True
+            return True
         else:
             return False
 
