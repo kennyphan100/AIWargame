@@ -309,6 +309,22 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
+    def is_engaged_in_combat(self, coord : Coord) -> bool:
+        left = Coord(coord.row, coord.col-1)
+        right = Coord(coord.row, coord.col+1)
+        top = Coord(coord.row+1, coord.col)
+        bottom =  Coord(coord.row-1, coord.col)
+
+        if self.is_valid_coord(left) and self.get(left) and self.get(left).player != self.get(coord).player:
+            return True
+        elif self.is_valid_coord(right) and self.get(right) and self.get(right).player != self.get(coord).player:
+            return True
+        elif self.is_valid_coord(top) and self.get(top) and self.get(top).player != self.get(coord).player:
+            return True 
+        elif self.is_valid_coord(bottom) and self.get(bottom) and self.get(bottom).player != self.get(coord).player:
+            return True
+        return False
+
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
@@ -316,6 +332,11 @@ class Game:
         unit = self.get(coords.src)
         if unit is None or unit.player != self.next_player:
             return False
+        
+        # === RETURN FALSE IF THE UNIT IS ENGAGED IN COMBAT ===
+        if (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and self.is_engaged_in_combat(coords.src):
+            return False
+   
         unit = self.get(coords.dst)
         return (unit is None)
 
