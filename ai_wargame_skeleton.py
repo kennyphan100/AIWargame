@@ -345,6 +345,10 @@ class Game:
         if unit is None or unit.player != self.next_player:
             return False
         
+        # === RETURN FALSE IF THE DESTINATION COORDINATE IS NOT ADJACENT TO SOURCE COORDINATE ===
+        if (self.is_adjacent(coords.src, coords.dst) == False):
+            return False
+
         # === RETURN FALSE IF THE UNIT IS ENGAGED IN COMBAT ===
         if (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and self.is_engaged_in_combat(coords.src):
             return False
