@@ -373,7 +373,10 @@ class Game:
     def read_move(self) -> CoordPair:
         """Read a move from keyboard and return as a CoordPair."""
         while True:
-            s = input(F'Player {self.next_player.name}, enter your move: ')
+            s = input(F'Player {self.next_player.name}, enter your move (enter q to quit): ')
+            if (s == 'q'):
+                print("Exiting game.")
+                exit()
             coords = CoordPair.from_string(s)
             if coords is not None and self.is_valid_coord(coords.src) and self.is_valid_coord(coords.dst):
                 return coords
