@@ -610,6 +610,7 @@ class Game:
     
     # Self-destruct action
     def self_destruct(self, coords: CoordPair) -> None:
+        itself = coords.src
         left = Coord(coords.src.row, coords.src.col-1)
         right = Coord(coords.src.row, coords.src.col+1)
         top = Coord(coords.src.row-1, coords.src.col)
@@ -621,14 +622,11 @@ class Game:
         neighbors = [left, right, top, bottom, top_left, top_right, bottom_left, bottom_right]
         
         # self-destruct the unit
-        self.get(coords.src).health = 0
-        self.remove_dead(coords.src)
+        self.mod_health(itself, -(self.get(itself).health))
         
         # damage surrounding units
-        for unit in neighbors:
-            if self.get(unit):
-                self.get(unit).health = self.get(unit).health - 2
-                self.remove_dead(unit)
+        for coord in neighbors:
+            self.mod_health(coord, -2)
         
     # Check if a unit is adjacent to another unit
     def is_adjacent(self, src : Coord, dst: Coord) -> bool:
