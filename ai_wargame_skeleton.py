@@ -332,7 +332,7 @@ class Game:
         return ([coords.src.row, coords.src.col+1] == [coords.dst.row, coords.dst.col])
     
     def is_move_up(self, coords : CoordPair) -> bool:
-        return ([coords.src.row-1, coords.src.col] == [coords.dst.row+1, coords.dst.col])
+        return ([coords.src.row-1, coords.src.col] == [coords.dst.row, coords.dst.col])
     
     def is_move_left(self, coords : CoordPair) -> bool:
         return ([coords.src.row, coords.src.col-1] == [coords.dst.row, coords.dst.col])
