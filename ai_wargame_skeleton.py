@@ -309,6 +309,34 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
+    def is_engaged_in_combat(self, coord : Coord) -> bool:
+        left = Coord(coord.row, coord.col-1)
+        right = Coord(coord.row, coord.col+1)
+        top = Coord(coord.row-1, coord.col)
+        bottom =  Coord(coord.row+1, coord.col)
+
+        if self.is_valid_coord(left) and self.get(left) and self.get(left).player != self.get(coord).player:
+            return True
+        elif self.is_valid_coord(right) and self.get(right) and self.get(right).player != self.get(coord).player:
+            return True
+        elif self.is_valid_coord(top) and self.get(top) and self.get(top).player != self.get(coord).player:
+            return True 
+        elif self.is_valid_coord(bottom) and self.get(bottom) and self.get(bottom).player != self.get(coord).player:
+            return True
+        return False
+
+    def is_move_down(self, coords : CoordPair) -> bool:
+        return ([coords.src.row+1, coords.src.col] == [coords.dst.row, coords.dst.col])
+    
+    def is_move_right(self, coords : CoordPair) -> bool:
+        return ([coords.src.row, coords.src.col+1] == [coords.dst.row, coords.dst.col])
+    
+    def is_move_up(self, coords : CoordPair) -> bool:
+        return ([coords.src.row-1, coords.src.col] == [coords.dst.row, coords.dst.col])
+    
+    def is_move_left(self, coords : CoordPair) -> bool:
+        return ([coords.src.row, coords.src.col-1] == [coords.dst.row, coords.dst.col])
+
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
@@ -316,6 +344,23 @@ class Game:
         unit = self.get(coords.src)
         if unit is None or unit.player != self.next_player:
             return False
+        
+        # === RETURN FALSE IF THE DESTINATION COORDINATE IS NOT ADJACENT TO SOURCE COORDINATE ===
+        if (not self.is_adjacent(coords.src, coords.dst)):
+            return False
+
+        # === RETURN FALSE IF THE UNIT IS ENGAGED IN COMBAT ===
+        if (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and self.is_engaged_in_combat(coords.src):
+            return False
+   
+        # === RETURN FALSE FOR MOVE DOWN OR MOVE RIGHT FOR THE ATTACKER'S AI, Firewall, and Program ===
+        if unit.player == Player.Attacker and (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and (self.is_move_down(coords) or self.is_move_right(coords)):
+            return False
+        
+        # === RETURN FALSE FOR MOVE UP OR MOVE LEFT FOR THE DEFENDER'S AI, Firewall, and Program ===
+        if unit.player == Player.Defender and (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and (self.is_move_up(coords) or self.is_move_left(coords)):
+            return False
+        
         unit = self.get(coords.dst)
         return (unit is None)
 
