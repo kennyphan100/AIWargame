@@ -11,7 +11,7 @@ A demo of the game is available at https://users.encs.concordia.ca/∼kosseim/CO
 Python
 
 ## Participants
-* Kenny Phan (40164726)
+* Kenny Phan (40164827)
 * Zi Hao Tan (40174018)
 * Sheng Han Wang (40173425)
 
