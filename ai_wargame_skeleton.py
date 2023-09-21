@@ -346,7 +346,7 @@ class Game:
             return False
         
         # === RETURN FALSE IF THE DESTINATION COORDINATE IS NOT ADJACENT TO SOURCE COORDINATE ===
-        if (self.is_adjacent(coords.src, coords.dst) == False):
+        if (not self.is_adjacent(coords.src, coords.dst)):
             return False
 
         # === RETURN FALSE IF THE UNIT IS ENGAGED IN COMBAT ===
