@@ -373,6 +373,9 @@ class Game:
         elif self.is_valid_to_attack(coords):
             self.attack(coords)
             return (True, "")
+        elif self.is_valid_to_self_destruct(coords):
+            self.self_destruct(coords)
+            return(True, "")
         return (False,"invalid move")
 
     def next_turn(self):
@@ -589,6 +592,10 @@ class Game:
         else:
             return False
     
+    # Check if a unit can self-destruct
+    def is_valid_to_self_destruct(self, coords: CoordPair) -> bool:
+        return coords.src == coords.dst
+        
     # Attack action
     def attack(self, coords: CoordPair) -> None:
         src_unit = self.get(coords.src)
@@ -601,6 +608,28 @@ class Game:
         self.remove_dead(coords.src)
         self.remove_dead(coords.dst)
     
+    # Self-destruct action
+    def self_destruct(self, coords: CoordPair) -> None:
+        left = Coord(coords.src.row, coords.src.col-1)
+        right = Coord(coords.src.row, coords.src.col+1)
+        top = Coord(coords.src.row-1, coords.src.col)
+        bottom =  Coord(coords.src.row+1, coords.src.col)
+        top_left = Coord(coords.src.row-1, coords.src.col-1)
+        top_right = Coord(coords.src.row-1, coords.src.col+1)
+        bottom_left = Coord(coords.src.row+1, coords.src.col-1)
+        bottom_right = Coord(coords.src.row+1, coords.src.col+1)
+        neighbors = [left, right, top, bottom, top_left, top_right, bottom_left, bottom_right]
+        
+        # self-destruct the unit
+        self.get(coords.src).health = 0
+        self.remove_dead(coords.src)
+        
+        # damage surrounding units
+        for unit in neighbors:
+            if self.get(unit):
+                self.get(unit).health = self.get(unit).health - 2
+                self.remove_dead(unit)
+        
     # Check if a unit is adjacent to another unit
     def is_adjacent(self, src : Coord, dst: Coord) -> bool:
         if src.row == dst.row and abs(src.col - dst.col) == 1:
