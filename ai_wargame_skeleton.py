@@ -373,6 +373,9 @@ class Game:
         elif self.is_valid_to_attack(coords):
             self.attack(coords)
             return (True, "")
+        elif self.is_valid_to_repair(coords):
+            self.repair(coords)
+            return (True, "")
         elif self.is_valid_to_self_destruct(coords):
             self.self_destruct(coords)
             return(True, "")
@@ -592,6 +595,18 @@ class Game:
         else:
             return False
     
+    #Check if a unit can repair another unit
+    def is_valid_to_repair(self, coords : CoordPair) -> bool:
+        src = coords.src
+        dst = coords.dst
+        src_unit = self.get(src)
+        dst_unit = self.get(dst)
+        
+        if self.get(src) and self.get(dst) and self.is_adjacent(src, dst) and src_unit.player == dst_unit.player and src_unit.repair_amount(dst_unit) != 0 and dst_unit.health < 9:
+            return True
+        else:
+            return False
+            
     # Check if a unit can self-destruct
     def is_valid_to_self_destruct(self, coords: CoordPair) -> bool:
         return coords.src == coords.dst
@@ -603,9 +618,17 @@ class Game:
         
         attack_amount__src_to_dst = src_unit.damage_amount(dst_unit)
         attack_amount_dst_to_src = dst_unit.damage_amount(src_unit)
-        
+    
         self.mod_health(coords.src, -(attack_amount_dst_to_src))
         self.mod_health(coords.dst, -(attack_amount__src_to_dst))
+        
+   # Repair action 
+    def repair(self, coords : CoordPair) -> None:
+        src_unit = self.get(coords.src)
+        dst_unit = self.get(coords.dst)
+
+        amount = src_unit.repair_amount(dst_unit)
+        self.mod_health(coords.dst, amount)
     
     # Self-destruct action
     def self_destruct(self, coords: CoordPair) -> None:
