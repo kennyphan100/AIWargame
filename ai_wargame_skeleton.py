@@ -616,12 +616,11 @@ class Game:
         src_unit = self.get(coords.src)
         dst_unit = self.get(coords.dst)
         
-        amount = src_unit.damage_amount(dst_unit)
-        src_unit.health = src_unit.health - amount
-        dst_unit.health = dst_unit.health - amount
-        
-        self.remove_dead(coords.src)
-        self.remove_dead(coords.dst)
+        attack_amount_src_to_dst = src_unit.damage_amount(dst_unit)
+        attack_amount_dst_to_src = dst_unit.damage_amount(src_unit)
+    
+        self.mod_health(coords.src, - (attack_amount_dst_to_src))
+        self.mod_health(coords.dst, - (attack_amount_src_to_dst))
         
    # Repair action 
     def repair(self, coords : CoordPair) -> None:
