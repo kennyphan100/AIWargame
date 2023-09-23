@@ -658,6 +658,11 @@ class Game:
             return True
         else:
             return False
+    
+    # Create the output file name
+    def create_file_name(self, b: str, t: str, m: str) -> str:
+        fileName = "gameTrace" + "-" + b + "-" + t + "-" + m + ".txt"
+        return fileName
 
 ##############################################################################################################
 
@@ -699,6 +704,15 @@ def main():
     # create a new game
     game = Game(options=options)
 
+    outputFile = open(game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns)), "x")
+    outputFile.write("The game parameters\n")
+    outputFile.write("-------------------\n")
+    outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
+    outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
+    outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
+    outputFile.write("Play mode: " + args.game_type + "\n")
+    outputFile.close()
+    
     # the main game loop
     while True:
         print()
