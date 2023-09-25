@@ -437,7 +437,7 @@ class Game:
             else:
                 print('Invalid coordinates! Try again.')
     
-    def human_turn(self):
+    def human_turn(self) -> str:
         """Human player plays a move (or get via broker)."""
         if self.options.broker is not None:
             print("Getting next move with auto-retry from game broker...")
@@ -459,9 +459,10 @@ class Game:
                     print(f"Player {self.next_player.name}: ",end='')
                     print(result)
                     self.next_turn()
-                    break
+                    return " move from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
                 else:
                     print("The move is not valid! Try again.")
+                    return " move from " + mv.src.to_string() + " to " + mv.dst.to_string() + ". The move is not valid! Try again."
 
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
@@ -663,7 +664,7 @@ class Game:
     def create_file_name(self, b: str, t: str, m: str) -> str:
         fileName = "gameTrace" + "-" + b + "-" + t + "-" + m + ".txt"
         return fileName
-
+        
 ##############################################################################################################
 
 def main():
@@ -705,13 +706,15 @@ def main():
     game = Game(options=options)
 
     outputFile = open(game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns)), "x")
-    outputFile.write("The game parameters\n")
-    outputFile.write("-------------------\n")
+    outputFile.write("The game parameters:\n")
     outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
     outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
-    outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
-    outputFile.write("Play mode: " + args.game_type + "\n")
-    outputFile.close()
+    if options.game_type != GameType.AttackerVsDefender:
+        outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
+    outputFile.write("Play mode: " + args.game_type + "\n\n")
+    outputFile.write("The game starts!\n")
+    outputFile.write(game.to_string())
+    outputFile.write("\n")
     
     # the main game loop
     while True:
@@ -720,9 +723,10 @@ def main():
         winner = game.has_winner()
         if winner is not None:
             print(f"{winner.name} wins!")
+            outputFile.write(f"{winner.name} wins in " + str(game.turns_played) + " turns!")
             break
         if game.options.game_type == GameType.AttackerVsDefender:
-            game.human_turn()
+            outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
         elif game.options.game_type == GameType.AttackerVsComp and game.next_player == Player.Attacker:
             game.human_turn()
         elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
@@ -735,7 +739,9 @@ def main():
             else:
                 print("Computer doesn't know what to do!!!")
                 exit(1)
-
+        outputFile.write(game.to_string())
+        outputFile.write("\n")
+    outputFile.close()
 ##############################################################################################################
 
 if __name__ == '__main__':
