@@ -459,7 +459,14 @@ class Game:
                     print(f"Player {self.next_player.name}: ",end='')
                     print(result)
                     self.next_turn()
-                    return " move from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
+                    if self.is_valid_to_attack(mv):
+                        return " attacks from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
+                    elif self.is_valid_to_repair(mv):
+                        return " repairs from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
+                    elif self.is_valid_to_self_destruct(mv):
+                        return " self-destructs from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
+                    else:
+                        return " moves from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
                 else:
                     print("The move is not valid! Try again.")
                     return " move from " + mv.src.to_string() + " to " + mv.dst.to_string() + ". The move is not valid! Try again."
