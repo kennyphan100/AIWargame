@@ -8,6 +8,7 @@ from time import sleep
 from typing import Tuple, TypeVar, Type, Iterable, ClassVar
 import random
 import requests
+import os
 
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
@@ -699,44 +700,48 @@ def main():
 
     # create a new game
     game = Game(options=options)
-
-    outputFile = open(game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns)), "x")
-    outputFile.write("The game parameters:\n")
-    outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
-    outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
-    if options.game_type != GameType.AttackerVsDefender:
-        outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
-    outputFile.write("Play mode: " + args.game_type + "\n\n")
-    outputFile.write("The game starts!\n")
-    outputFile.write(game.to_string())
-    outputFile.write("\n")
-    
-    # the main game loop
-    while True:
-        print()
-        print(game)
-        winner = game.has_winner()
-        if winner is not None:
-            print(f"{winner.name} wins!")
-            outputFile.write(f"{winner.name} wins in " + str(game.turns_played) + " turns!")
-            break
-        if game.options.game_type == GameType.AttackerVsDefender:
-            outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
-        elif game.options.game_type == GameType.AttackerVsComp and game.next_player == Player.Attacker:
-            game.human_turn()
-        elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
-            game.human_turn()
-        else:
-            player = game.next_player
-            move = game.computer_turn()
-            if move is not None:
-                game.post_move_to_broker(move)
-            else:
-                print("Computer doesn't know what to do!!!")
-                exit(1)
+    fileName = game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns))
+    try:
+        outputFile = open(fileName, "x")
+        outputFile.write("The game parameters:\n")
+        outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
+        outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
+        if options.game_type != GameType.AttackerVsDefender:
+            outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
+        outputFile.write("Play mode: " + args.game_type + "\n\n")
+        outputFile.write("The game starts!\n")
         outputFile.write(game.to_string())
         outputFile.write("\n")
-    outputFile.close()
+        
+        # the main game loop
+        while True:
+            print()
+            print(game)
+            winner = game.has_winner()
+            if winner is not None:
+                print(f"{winner.name} wins!")
+                outputFile.write(f"{winner.name} wins in " + str(game.turns_played) + " turns!")
+                break
+            if game.options.game_type == GameType.AttackerVsDefender:
+                outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
+            elif game.options.game_type == GameType.AttackerVsComp and game.next_player == Player.Attacker:
+                game.human_turn()
+            elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
+                game.human_turn()
+            else:
+                player = game.next_player
+                move = game.computer_turn()
+                if move is not None:
+                    game.post_move_to_broker(move)
+                else:
+                    print("Computer doesn't know what to do!!!")
+                    exit(1)
+            outputFile.write(game.to_string())
+            outputFile.write("\n")
+        outputFile.close()
+    except FileExistsError:
+        print("The file already exists. The existing file will be deleted. Please try again!")
+        os.remove(fileName)
 ##############################################################################################################
 
 if __name__ == '__main__':
