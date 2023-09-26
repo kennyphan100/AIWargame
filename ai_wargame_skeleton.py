@@ -310,19 +310,9 @@ class Game:
             self.remove_dead(coord)
 
     def is_engaged_in_combat(self, coord : Coord) -> bool:
-        left = Coord(coord.row, coord.col-1)
-        right = Coord(coord.row, coord.col+1)
-        top = Coord(coord.row-1, coord.col)
-        bottom =  Coord(coord.row+1, coord.col)
-
-        if self.is_valid_coord(left) and self.get(left) and self.get(left).player != self.get(coord).player:
-            return True
-        elif self.is_valid_coord(right) and self.get(right) and self.get(right).player != self.get(coord).player:
-            return True
-        elif self.is_valid_coord(top) and self.get(top) and self.get(top).player != self.get(coord).player:
-            return True 
-        elif self.is_valid_coord(bottom) and self.get(bottom) and self.get(bottom).player != self.get(coord).player:
-            return True
+        for adj_unit in coord.iter_adjacent():
+            if self.is_valid_coord(adj_unit) and self.get(adj_unit) and self.get(adj_unit).player != self.get(coord).player:
+                return True
         return False
 
     def is_move_down(self, coords : CoordPair) -> bool:
@@ -648,21 +638,12 @@ class Game:
     # Self-destruct action
     def self_destruct(self, coords: CoordPair) -> None:
         itself = coords.src
-        left = Coord(coords.src.row, coords.src.col-1)
-        right = Coord(coords.src.row, coords.src.col+1)
-        top = Coord(coords.src.row-1, coords.src.col)
-        bottom =  Coord(coords.src.row+1, coords.src.col)
-        top_left = Coord(coords.src.row-1, coords.src.col-1)
-        top_right = Coord(coords.src.row-1, coords.src.col+1)
-        bottom_left = Coord(coords.src.row+1, coords.src.col-1)
-        bottom_right = Coord(coords.src.row+1, coords.src.col+1)
-        neighbors = [left, right, top, bottom, top_left, top_right, bottom_left, bottom_right]
         
         # self-destruct the unit
         self.mod_health(itself, -(self.get(itself).health))
         
         # damage surrounding units
-        for coord in neighbors:
+        for coord in itself.iter_range(1):
             self.mod_health(coord, -2)
         
     # Check if a unit is adjacent to another unit
