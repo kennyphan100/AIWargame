@@ -369,16 +369,16 @@ class Game:
         if self.is_valid_move(coords):
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
-            return (True,"")
+            return (True,"move")
         elif self.is_valid_to_attack(coords):
             self.attack(coords)
-            return (True, "")
+            return (True, "attack")
         elif self.is_valid_to_repair(coords):
             self.repair(coords)
-            return (True, "")
+            return (True, "repair")
         elif self.is_valid_to_self_destruct(coords):
             self.self_destruct(coords)
-            return(True, "")
+            return(True, "self-destruct")
         return (False,"invalid move")
 
     def next_turn(self):
@@ -458,14 +458,13 @@ class Game:
                 if success:
                     print(f"Player {self.next_player.name}: ",end='')
                     print(result)
-                    #self.next_turn()
-                    if self.is_valid_to_attack(mv):
+                    if result == "attack":
                         self.next_turn()
                         return " attacks from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
-                    elif self.is_valid_to_repair(mv):
+                    elif result == "repair":
                         self.next_turn()
                         return " repairs from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
-                    elif self.is_valid_to_self_destruct(mv):
+                    elif result == "self-destruct":
                         self.next_turn()
                         return " self-destructs from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
                     else:
@@ -621,7 +620,11 @@ class Game:
             
     # Check if a unit can self-destruct
     def is_valid_to_self_destruct(self, coords: CoordPair) -> bool:
-        return coords.src == coords.dst
+        src_unit = self.get(coords.src)
+        if src_unit and src_unit.player == self.next_player:
+            return coords.src == coords.dst
+        else:
+            return False
         
     # Attack action
     def attack(self, coords: CoordPair) -> None:
