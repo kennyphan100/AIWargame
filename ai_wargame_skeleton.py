@@ -708,7 +708,7 @@ def main():
         outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
         if options.game_type != GameType.AttackerVsDefender:
             outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
-        outputFile.write("Play mode: " + args.game_type + "\n\n")
+        outputFile.write("Play mode: " + options.game_type.name + "\n\n")
         outputFile.write("The game starts!\n")
         outputFile.write(game.to_string())
         outputFile.write("\n")
