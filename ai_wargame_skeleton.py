@@ -332,6 +332,7 @@ class Game:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
             return False
+        
         unit = self.get(coords.src)
         if unit is None or unit.player != self.next_player:
             return False
@@ -340,7 +341,7 @@ class Game:
         if (not self.is_adjacent(coords.src, coords.dst)):
             return False
 
-        # === RETURN FALSE IF THE UNIT IS ENGAGED IN COMBAT ===
+        # === RETURN FALSE IF THE UNIT (AI, Firewall or Program) IS ENGAGED IN COMBAT ===
         if (unit.type == UnitType.AI or unit.type == UnitType.Firewall or unit.type == UnitType.Program) and self.is_engaged_in_combat(coords.src):
             return False
    
@@ -361,13 +362,13 @@ class Game:
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"move")
-        elif self.is_valid_to_attack(coords):
+        if self.is_valid_to_attack(coords):
             self.attack(coords)
             return (True, "attack")
-        elif self.is_valid_to_repair(coords):
+        if self.is_valid_to_repair(coords):
             self.repair(coords)
             return (True, "repair")
-        elif self.is_valid_to_self_destruct(coords):
+        if self.is_valid_to_self_destruct(coords):
             self.self_destruct(coords)
             return(True, "self-destruct")
         return (False,"invalid move")
@@ -452,13 +453,13 @@ class Game:
                     if result == "attack":
                         self.next_turn()
                         return " attacks from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
-                    elif result == "repair":
+                    if result == "repair":
                         self.next_turn()
                         return " repairs from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
-                    elif result == "self-destruct":
+                    if result == "self-destruct":
                         self.next_turn()
                         return " self-destructs from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
-                    else:
+                    if result == "move":
                         self.next_turn()
                         return " moves from " + mv.src.to_string() + " to " + mv.dst.to_string() + "."
                 else:
@@ -591,31 +592,34 @@ class Game:
     def is_valid_to_attack(self, coords: CoordPair) -> bool:
         src = coords.src
         dst = coords.dst
+        src_unit = self.get(src)
+        dst_unit = self.get(dst)        
         
-        if self.get(src) and self.get(dst) and self.get(src).player == self.next_player and self.get(src).player != self.get(dst).player:
-            return self.is_adjacent(src, dst)
-        else:
-            return False
+        if self.get(src) and self.get(dst) and self.is_adjacent(src, dst) and src_unit.player == self.next_player and src_unit.player != dst_unit.player:
+            return True
+        
+        return False
     
-    #Check if a unit can repair another unit
+    # Check if a unit can repair another unit
     def is_valid_to_repair(self, coords : CoordPair) -> bool:
         src = coords.src
         dst = coords.dst
         src_unit = self.get(src)
         dst_unit = self.get(dst)
         
-        if self.get(src) and self.get(dst) and self.is_adjacent(src, dst) and src_unit.player == dst_unit.player and src_unit.repair_amount(dst_unit) != 0 and dst_unit.health < 9:
+        if self.get(src) and self.get(dst) and self.is_adjacent(src, dst) and src_unit.player == self.next_player and src_unit.player == dst_unit.player and src_unit.repair_amount(dst_unit) != 0 and dst_unit.health < 9:
             return True
-        else:
-            return False
+        
+        return False
             
     # Check if a unit can self-destruct
     def is_valid_to_self_destruct(self, coords: CoordPair) -> bool:
         src_unit = self.get(coords.src)
+
         if src_unit and src_unit.player == self.next_player:
             return coords.src == coords.dst
-        else:
-            return False
+        
+        return False
         
     # Attack action
     def attack(self, coords: CoordPair) -> None:
@@ -633,8 +637,8 @@ class Game:
         src_unit = self.get(coords.src)
         dst_unit = self.get(coords.dst)
 
-        amount = src_unit.repair_amount(dst_unit)
-        self.mod_health(coords.dst, amount)
+        repair_amount = src_unit.repair_amount(dst_unit)
+        self.mod_health(coords.dst, repair_amount)
     
     # Self-destruct action
     def self_destruct(self, coords: CoordPair) -> None:
@@ -651,10 +655,9 @@ class Game:
     def is_adjacent(self, src : Coord, dst: Coord) -> bool:
         if src.row == dst.row and abs(src.col - dst.col) == 1:
             return True
-        elif src.col == dst.col and abs(src.row - dst.row) == 1:
+        if src.col == dst.col and abs(src.row - dst.row) == 1:
             return True
-        else:
-            return False
+        return False
     
     # Create the output file name
     def create_file_name(self, b: str, t: str, m: str) -> str:
@@ -703,13 +706,15 @@ def main():
     fileName = game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns))
     try:
         outputFile = open(fileName, "x")
-        outputFile.write("The game parameters:\n")
+        outputFile.write("===== The Game Parameters =====\n")
         outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
         outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
         if options.game_type != GameType.AttackerVsDefender:
             outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
         outputFile.write("Play mode: " + options.game_type.name + "\n\n")
-        outputFile.write("The game starts!\n")
+        outputFile.write("======================\n")
+        outputFile.write("   The game starts!\n")
+        outputFile.write("======================\n")
         outputFile.write(game.to_string())
         outputFile.write("\n")
         
