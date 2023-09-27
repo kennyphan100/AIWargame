@@ -8,6 +8,7 @@ from time import sleep
 from typing import Tuple, TypeVar, Type, Iterable, ClassVar
 import random
 import requests
+import os
 
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
@@ -310,19 +311,9 @@ class Game:
             self.remove_dead(coord)
 
     def is_engaged_in_combat(self, coord : Coord) -> bool:
-        left = Coord(coord.row, coord.col-1)
-        right = Coord(coord.row, coord.col+1)
-        top = Coord(coord.row-1, coord.col)
-        bottom =  Coord(coord.row+1, coord.col)
-
-        if self.is_valid_coord(left) and self.get(left) and self.get(left).player != self.get(coord).player:
-            return True
-        elif self.is_valid_coord(right) and self.get(right) and self.get(right).player != self.get(coord).player:
-            return True
-        elif self.is_valid_coord(top) and self.get(top) and self.get(top).player != self.get(coord).player:
-            return True 
-        elif self.is_valid_coord(bottom) and self.get(bottom) and self.get(bottom).player != self.get(coord).player:
-            return True
+        for adj_unit in coord.iter_adjacent():
+            if self.is_valid_coord(adj_unit) and self.get(adj_unit) and self.get(adj_unit).player != self.get(coord).player:
+                return True
         return False
 
     def is_move_down(self, coords : CoordPair) -> bool:
@@ -648,21 +639,12 @@ class Game:
     # Self-destruct action
     def self_destruct(self, coords: CoordPair) -> None:
         itself = coords.src
-        left = Coord(coords.src.row, coords.src.col-1)
-        right = Coord(coords.src.row, coords.src.col+1)
-        top = Coord(coords.src.row-1, coords.src.col)
-        bottom =  Coord(coords.src.row+1, coords.src.col)
-        top_left = Coord(coords.src.row-1, coords.src.col-1)
-        top_right = Coord(coords.src.row-1, coords.src.col+1)
-        bottom_left = Coord(coords.src.row+1, coords.src.col-1)
-        bottom_right = Coord(coords.src.row+1, coords.src.col+1)
-        neighbors = [left, right, top, bottom, top_left, top_right, bottom_left, bottom_right]
         
         # self-destruct the unit
         self.mod_health(itself, -(self.get(itself).health))
         
         # damage surrounding units
-        for coord in neighbors:
+        for coord in itself.iter_range(1):
             self.mod_health(coord, -2)
         
     # Check if a unit is adjacent to another unit
@@ -718,44 +700,48 @@ def main():
 
     # create a new game
     game = Game(options=options)
-
-    outputFile = open(game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns)), "x")
-    outputFile.write("The game parameters:\n")
-    outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
-    outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
-    if options.game_type != GameType.AttackerVsDefender:
-        outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
-    outputFile.write("Play mode: " + args.game_type + "\n\n")
-    outputFile.write("The game starts!\n")
-    outputFile.write(game.to_string())
-    outputFile.write("\n")
-    
-    # the main game loop
-    while True:
-        print()
-        print(game)
-        winner = game.has_winner()
-        if winner is not None:
-            print(f"{winner.name} wins!")
-            outputFile.write(f"{winner.name} wins in " + str(game.turns_played) + " turns!")
-            break
-        if game.options.game_type == GameType.AttackerVsDefender:
-            outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
-        elif game.options.game_type == GameType.AttackerVsComp and game.next_player == Player.Attacker:
-            game.human_turn()
-        elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
-            game.human_turn()
-        else:
-            player = game.next_player
-            move = game.computer_turn()
-            if move is not None:
-                game.post_move_to_broker(move)
-            else:
-                print("Computer doesn't know what to do!!!")
-                exit(1)
+    fileName = game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns))
+    try:
+        outputFile = open(fileName, "x")
+        outputFile.write("The game parameters:\n")
+        outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
+        outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
+        if options.game_type != GameType.AttackerVsDefender:
+            outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
+        outputFile.write("Play mode: " + options.game_type.name + "\n\n")
+        outputFile.write("The game starts!\n")
         outputFile.write(game.to_string())
         outputFile.write("\n")
-    outputFile.close()
+        
+        # the main game loop
+        while True:
+            print()
+            print(game)
+            winner = game.has_winner()
+            if winner is not None:
+                print(f"{winner.name} wins!")
+                outputFile.write(f"{winner.name} wins in " + str(game.turns_played) + " turns!")
+                break
+            if game.options.game_type == GameType.AttackerVsDefender:
+                outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
+            elif game.options.game_type == GameType.AttackerVsComp and game.next_player == Player.Attacker:
+                game.human_turn()
+            elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
+                game.human_turn()
+            else:
+                player = game.next_player
+                move = game.computer_turn()
+                if move is not None:
+                    game.post_move_to_broker(move)
+                else:
+                    print("Computer doesn't know what to do!!!")
+                    exit(1)
+            outputFile.write(game.to_string())
+            outputFile.write("\n")
+        outputFile.close()
+    except FileExistsError:
+        print("The file already exists. The existing file will be deleted. Please try again!")
+        os.remove(fileName)
 ##############################################################################################################
 
 if __name__ == '__main__':
