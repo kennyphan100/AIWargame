@@ -675,7 +675,7 @@ def main():
         parser.add_argument('--max_depth', type=int, help='maximum search depth')
         parser.add_argument('max_time', type=float, help='maximum search time')
         parser.add_argument('max_turns', type=int, help='maximum number of turns')
-        parser.add_argument('alpha_beta', type=bool, help='weather alpha-beta is on or off')
+        parser.add_argument('alpha_beta', type=bool, help='whether alpha-beta is on or off')
         parser.add_argument('game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
         parser.add_argument('--broker', type=str, help='play via a game broker')
         args = parser.parse_args()
