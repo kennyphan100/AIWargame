@@ -248,6 +248,7 @@ class Game:
     stats: Stats = field(default_factory=Stats)
     _attacker_has_ai : bool = True
     _defender_has_ai : bool = True
+    is_a_draw : bool = False
 
     def __post_init__(self):
         """Automatically called after class init to set up the default board state."""
@@ -499,6 +500,9 @@ class Game:
                 return Player.Attacker    
         elif self._defender_has_ai:
             return Player.Defender
+        else:
+            self.is_a_draw = True
+            return None
 
     def move_candidates(self) -> Iterable[CoordPair]:
         """Generate valid move candidates for the next player."""
@@ -733,6 +737,10 @@ def main():
             if winner is not None:
                 print(f"{winner.name} wins!")
                 outputFile.write(f"{winner.name} wins in " + str(game.turns_played) + " turns!")
+                break
+            if game.is_a_draw:
+                print("No Winner. Both AIs are dead. This is a draw!")
+                outputFile.write("No Winner. Both AIs are dead. This is a draw!")
                 break
             if game.options.game_type == GameType.AttackerVsDefender:
                 outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
