@@ -10,10 +10,11 @@ A demo of the game is available at https://users.encs.concordia.ca/∼kosseim/CO
 ## Technology Used
 Python
 
-## How to run game
+## How to run the game
 1. Open a terminal.
 2. Change the directory to where the Python file is located.
-3. Run the command appropriate command: python3/python/py ai_wargame_skeleton.py {max_time} {max_turns} {alpha_beta} {game_type}
+3. Run the appropriate command: python3/python/py ai_wargame_skeleton.py {max_time} {max_turns} {alpha_beta} {game_type}
+
 If you are running on python3:
 e.g. python3 ai_wargame_skeleton.py 0 100 false manual
 
