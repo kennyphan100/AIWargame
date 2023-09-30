@@ -16,6 +16,7 @@ Python
 3. Run the appropriate command: python3/python/py ai_wargame_skeleton.py {max_time} {max_turns} {alpha_beta} {game_type}
 
 If you are running on python3:
+
 e.g. python3 ai_wargame_skeleton.py 0 100 false manual
 
 ## Participants
