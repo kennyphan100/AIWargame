@@ -667,44 +667,51 @@ class Game:
 ##############################################################################################################
 
 def main():
-    # parse command line arguments
-    parser = argparse.ArgumentParser(
-        prog='ai_wargame',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--max_depth', type=int, help='maximum search depth')
-    parser.add_argument('--max_time', type=float, help='maximum search time')
-    parser.add_argument('--game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
-    parser.add_argument('--broker', type=str, help='play via a game broker')
-    parser.add_argument('max_turns', type=int, help='maximum number of turns')
-    args = parser.parse_args()
-
-    # parse the game type
-    if args.game_type == "attacker":
-        game_type = GameType.AttackerVsComp
-    elif args.game_type == "defender":
-        game_type = GameType.CompVsDefender
-    elif args.game_type == "manual":
-        game_type = GameType.AttackerVsDefender
-    else:
-        game_type = GameType.CompVsComp
-    
-    # set up game options
-    options = Options(game_type=game_type)
-
-    # override class defaults via command line options
-    if args.max_depth is not None:
-        options.max_depth = args.max_depth
-    if args.max_time is not None:
-        options.max_time = args.max_time
-    if args.broker is not None:
-        options.broker = args.broker
-    if args.max_turns is not None:
-        options.max_turns = args.max_turns
-
-    # create a new game
-    game = Game(options=options)
-    fileName = game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns))
     try:
+        # parse command line arguments
+        parser = argparse.ArgumentParser(
+            prog='ai_wargame',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('--max_depth', type=int, help='maximum search depth')
+        parser.add_argument('max_time', type=float, help='maximum search time')
+        parser.add_argument('max_turns', type=int, help='maximum number of turns')
+        parser.add_argument('alpha_beta', type=bool, help='whether alpha-beta is on or off')
+        parser.add_argument('game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
+        parser.add_argument('--broker', type=str, help='play via a game broker')
+        args = parser.parse_args()
+
+        # parse the game type
+        if args.game_type == "attacker":
+            game_type = GameType.AttackerVsComp
+        elif args.game_type == "defender":
+            game_type = GameType.CompVsDefender
+        elif args.game_type == "manual":
+            game_type = GameType.AttackerVsDefender
+        else:
+            game_type = GameType.CompVsComp
+        
+        # set up game options
+        options = Options(game_type=game_type)
+
+        # override class defaults via command line options
+        if args.max_depth is not None:
+            options.max_depth = args.max_depth
+        if args.max_time is not None:
+            options.max_time = args.max_time
+        if args.broker is not None:
+            options.broker = args.broker
+        if args.max_turns is not None:
+            options.max_turns = args.max_turns
+        if args.alpha_beta is not None:
+            options.alpha_beta = args.alpha_beta
+    except SystemExit:
+        print("Please input the valid game parameters in the correct format.")
+        exit(1)
+    
+    try:
+        # create a new game
+        game = Game(options=options)
+        fileName = game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns))
         outputFile = open(fileName, "x")
         outputFile.write("===== The Game Parameters =====\n")
         outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
@@ -745,8 +752,9 @@ def main():
             outputFile.write("\n")
         outputFile.close()
     except FileExistsError:
-        print("The file already exists. The existing file will be deleted. Please try again!")
+        print("The outpufile already exists. The existing file will be deleted. Please try running the game again!")
         os.remove(fileName)
+        exit(1)
 ##############################################################################################################
 
 if __name__ == '__main__':
