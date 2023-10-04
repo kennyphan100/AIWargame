@@ -667,7 +667,41 @@ class Game:
     def create_file_name(self, b: str, t: str, m: str) -> str:
         fileName = "gameTrace" + "-" + b + "-" + t + "-" + m + ".txt"
         return fileName
+    
+    # Heuristic e0
+    def heuristic_e0(self) -> int:
+        virus_p1, tech_p1, firewall_p1, program_p1, ai_p1 = 0, 0, 0, 0, 0
+        virus_p2, tech_p2, firewall_p2, program_p2, ai_p2 = 0, 0, 0, 0, 0
         
+        # Counting the number of different type of units of the current player
+        for coord, unit in self.player_units(self.next_player):
+            if unit.type == UnitType.Virus:
+                virus_p1 += 1
+            elif unit.type == UnitType.Tech:
+                tech_p1 += 1
+            elif unit.type == UnitType.Firewall:
+                firewall_p1 += 1
+            elif unit.type == UnitType.Program:
+                program_p1 += 1
+            elif unit.type == UnitType.AI:
+                ai_p1 += 1
+        
+        # Counting the number of different type of units of the opposite player
+        for coord, unit in self.player_units(Player.Attacker if self.next_player == Player.Defender else Player.Defender):
+            if unit.type == UnitType.Virus:
+                virus_p2 += 1
+            elif unit.type == UnitType.Tech:
+                tech_p2 += 1
+            elif unit.type == UnitType.Firewall:
+                firewall_p2 += 1
+            elif unit.type == UnitType.Program:
+                program_p2 += 1
+            elif unit.type == UnitType.AI:
+                ai_p2 += 1
+                 
+        e0 = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1) + 9999 * ai_p1) - (3 * (virus_p2 + tech_p2 + firewall_p2 + program_p2) + 9999 * ai_p2)
+        return e0
+    
 ##############################################################################################################
 
 def main():
