@@ -496,7 +496,7 @@ class Game:
             if self._defender_has_ai:
                 return None
             else:
-                return Player.Attacker    
+                return Player.Attacker
         return Player.Defender
 
     def move_candidates(self) -> Iterable[CoordPair]:
@@ -506,7 +506,7 @@ class Game:
             move.src = src
             for dst in src.iter_adjacent():
                 move.dst = dst
-                if self.is_valid_move(move):
+                if self.is_valid_move(move) or self.is_valid_to_attack(move) or self.is_valid_to_repair(move):
                     yield move.clone()
             move.dst = src
             yield move.clone()
@@ -523,7 +523,7 @@ class Game:
     def suggest_move(self) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         start_time = datetime.now()
-        (score, move, avg_depth) = self.random_move()
+        (score, move, avg_depth) = self.minimax(self, self.options.max_depth, True, self.next_player, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -664,12 +664,11 @@ class Game:
         return fileName
     
     # Heuristic e0
-    def heuristic_e0(self) -> int:
+    def heuristic_e0(self, board: Game, maximizing_player) -> int:
         virus_p1, tech_p1, firewall_p1, program_p1, ai_p1 = 0, 0, 0, 0, 0
         virus_p2, tech_p2, firewall_p2, program_p2, ai_p2 = 0, 0, 0, 0, 0
         
-        # Counting the number of different type of units of the current player
-        for coord, unit in self.player_units(self.next_player):
+        for coord, unit in board.player_units(maximizing_player):
             if unit.type == UnitType.Virus:
                 virus_p1 += 1
             elif unit.type == UnitType.Tech:
@@ -680,9 +679,11 @@ class Game:
                 program_p1 += 1
             elif unit.type == UnitType.AI:
                 ai_p1 += 1
+
+        p1_score = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1) + 9999 * ai_p1)
         
         # Counting the number of different type of units of the opposite player
-        for coord, unit in self.player_units(Player.Attacker if self.next_player == Player.Defender else Player.Defender):
+        for coord, unit in board.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
             if unit.type == UnitType.Virus:
                 virus_p2 += 1
             elif unit.type == UnitType.Tech:
@@ -694,9 +695,58 @@ class Game:
             elif unit.type == UnitType.AI:
                 ai_p2 += 1
                  
-        e0 = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1) + 9999 * ai_p1) - (3 * (virus_p2 + tech_p2 + firewall_p2 + program_p2) + 9999 * ai_p2)
-        return e0
+        p2_score = (3 * (virus_p2 + tech_p2 + firewall_p2 + program_p2) + 9999 * ai_p2)
+
+        return p1_score - p2_score
     
+    # Minimax Algorithm
+    def minimax(self, game : Game, depth, is_maximizing_player, maximizing_player, alpha, beta) -> Tuple[int, CoordPair | None, int]:
+        if depth == 0 or game.has_winner():
+            return (self.heuristic_e0(game, maximizing_player), None, 1)
+
+        moves = list(game.move_candidates())
+
+        if is_maximizing_player:
+            max_eval = MIN_HEURISTIC_SCORE
+            best_move = None
+            for move in moves:
+                temp_game = game.clone()
+                (success, result) = temp_game.perform_move(move)
+                if success:
+                    temp_game.next_turn()
+                    current_eval = self.minimax(temp_game, depth-1, False, maximizing_player, alpha, beta)[0]
+
+                    if current_eval > max_eval:
+                        max_eval = current_eval
+                        best_move = move
+                    
+                    if game.options.alpha_beta:
+                        alpha = max(alpha, current_eval)
+                        if beta <= alpha:
+                            break
+
+            return (max_eval, best_move, 2)
+        else:
+            min_eval = MAX_HEURISTIC_SCORE
+            best_move = None
+            for move in moves:
+                temp_game = game.clone()
+                (success, result) = temp_game.perform_move(move)
+                if success:
+                    temp_game.next_turn()
+                    current_eval = self.minimax(temp_game, depth-1, True, maximizing_player, alpha, beta)[0]
+                    
+                    if current_eval < min_eval:
+                        min_eval = current_eval
+                        best_move = move
+                    
+                    if game.options.alpha_beta:
+                        beta = min(beta, current_eval)
+                        if beta <= alpha:
+                            break
+
+            return (min_eval, best_move, 3)
+
 ##############################################################################################################
 
 def main():
@@ -705,7 +755,7 @@ def main():
         parser = argparse.ArgumentParser(
             prog='ai_wargame',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('--max_depth', type=int, help='maximum search depth')
+        parser.add_argument('max_depth', type=int, help='maximum search depth')
         parser.add_argument('max_time', type=float, help='maximum search time')
         parser.add_argument('max_turns', type=int, help='maximum number of turns')
         parser.add_argument('alpha_beta', type=bool, help='whether alpha-beta is on or off')
@@ -744,7 +794,7 @@ def main():
     try:
         # create a new game
         game = Game(options=options)
-        fileName = game.create_file_name(str(not options.alpha_beta), str(options.max_time), str(options.max_turns))
+        fileName = game.create_file_name(str(options.alpha_beta), str(options.max_time), str(options.max_turns))
         outputFile = open(fileName, "x")
         outputFile.write("===== The Game Parameters =====\n")
         outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
@@ -770,9 +820,9 @@ def main():
             if game.options.game_type == GameType.AttackerVsDefender:
                 outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
             elif game.options.game_type == GameType.AttackerVsComp and game.next_player == Player.Attacker:
-                game.human_turn()
+                outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
             elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
-                game.human_turn()
+                outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
             else:
                 player = game.next_player
                 move = game.computer_turn()
