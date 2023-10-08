@@ -758,7 +758,7 @@ def main():
         parser.add_argument('max_depth', type=int, help='maximum search depth')
         parser.add_argument('max_time', type=float, help='maximum search time')
         parser.add_argument('max_turns', type=int, help='maximum number of turns')
-        parser.add_argument('alpha_beta', type=bool, help='whether alpha-beta is on or off')
+        parser.add_argument('alpha_beta', type=str.lower, help='whether alpha-beta is on or off')
         parser.add_argument('game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
         parser.add_argument('--broker', type=str, help='play via a game broker')
         args = parser.parse_args()
@@ -786,7 +786,8 @@ def main():
         if args.max_turns is not None:
             options.max_turns = args.max_turns
         if args.alpha_beta is not None:
-            options.alpha_beta = args.alpha_beta
+            options.alpha_beta = True if args.alpha_beta == "true" else False
+
     except SystemExit:
         print("Please input the valid game parameters in the correct format.")
         exit(1)
