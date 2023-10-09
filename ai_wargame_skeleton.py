@@ -227,6 +227,7 @@ class Options:
     max_turns : int | None = 100
     randomize_moves : bool = True
     broker : str | None = None
+    heuristic : str | None = "e0"
                 
 ##############################################################################################################
 
@@ -466,14 +467,16 @@ class Game:
                     print("The move is not valid! Try again.")
                     return " move from " + mv.src.to_string() + " to " + mv.dst.to_string() + ". The move is not valid! Try again."
 
-    def computer_turn(self) -> CoordPair | None:
+    def computer_turn(self, fileName) -> CoordPair | None:
         """Computer plays a move."""
-        mv = self.suggest_move()
+        mv = self.suggest_move(fileName)
         if mv is not None:
             (success,result) = self.perform_move(mv)
             if success:
-                print(f"Computer {self.next_player.name}: ",end='')
-                print(result)
+                outputFile = open(fileName, "a")
+                print(f"Computer {self.next_player.name}: {result} from {mv.src.to_string()} to {mv.dst.to_string()}\n",end='')
+                outputFile.write(f"Computer {self.next_player.name}: {result} from {mv.src.to_string()} to {mv.dst.to_string()}\n\n")
+                outputFile.close()
                 self.next_turn()
         return mv
 
@@ -520,13 +523,16 @@ class Game:
         else:
             return (0, None, 0)
 
-    def suggest_move(self) -> CoordPair | None:
+    def suggest_move(self, fileName) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
+        outputFile = open(fileName, "a")
         start_time = datetime.now()
         (score, move, avg_depth) = self.minimax(self, self.options.max_depth, True, self.next_player, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
+        outputFile.write("Time for this action: " + str(elapsed_seconds) + "\n")
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
+        outputFile.write("Heuristic Score: " + str(score) + "\n")
         print(f"Average recursive depth: {avg_depth:0.1f}")
         print(f"Evals per depth: ",end='')
         for k in sorted(self.stats.evaluations_per_depth.keys()):
@@ -536,6 +542,7 @@ class Game:
         if self.stats.total_seconds > 0:
             print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
         print(f"Elapsed time: {elapsed_seconds:0.1f}s")
+        outputFile.close()
         return move
 
     def post_move_to_broker(self, move: CoordPair):
@@ -760,6 +767,7 @@ def main():
         parser.add_argument('max_turns', type=int, help='maximum number of turns')
         parser.add_argument('alpha_beta', type=str.lower, help='whether alpha-beta is on or off')
         parser.add_argument('game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
+        parser.add_argument('--heuristic', type=str, default="e0", help='heuristic: e0|e1|e1')
         parser.add_argument('--broker', type=str, help='play via a game broker')
         args = parser.parse_args()
 
@@ -787,6 +795,8 @@ def main():
             options.max_turns = args.max_turns
         if args.alpha_beta is not None:
             options.alpha_beta = True if args.alpha_beta == "true" else False
+        if args.heuristic is not None:
+            options.heuristic = args.heuristic
 
     except SystemExit:
         print("Please input the valid game parameters in the correct format.")
@@ -800,9 +810,10 @@ def main():
         outputFile.write("===== The Game Parameters =====\n")
         outputFile.write("The value of the timeout in seconds: " + str(options.max_time) + "\n")
         outputFile.write("The max number of turns: " + str(options.max_turns) + "\n")
+        outputFile.write("Play mode: " + options.game_type.name + "\n")
         if options.game_type != GameType.AttackerVsDefender:
-            outputFile.write("Alpha-beta: " + str(not options.alpha_beta) + "\n")
-        outputFile.write("Play mode: " + options.game_type.name + "\n\n")
+            outputFile.write("Alpha-beta: " + str(options.alpha_beta) + "\n")
+            outputFile.write("Heuristic: " + str(options.heuristic) + "\n\n")
         outputFile.write("======================\n")
         outputFile.write("   The game starts!\n")
         outputFile.write("======================\n")
@@ -811,6 +822,8 @@ def main():
         
         # the main game loop
         while True:
+            if outputFile.closed:
+                outputFile = open(fileName, "a")
             print()
             print(game)
             winner = game.has_winner()
@@ -826,14 +839,18 @@ def main():
                 outputFile.write(game.next_player.name + game.human_turn() + "\n\n")
             else:
                 player = game.next_player
-                move = game.computer_turn()
+                outputFile.close()
+                move = game.computer_turn(fileName)
                 if move is not None:
                     game.post_move_to_broker(move)
                 else:
                     print("Computer doesn't know what to do!!!")
                     exit(1)
+            if outputFile.closed:
+                outputFile = open(fileName, "a")
             outputFile.write(game.to_string())
             outputFile.write("\n")
+            print("=============================================")
         outputFile.close()
     except FileExistsError:
         print("The outpufile already exists. The existing file will be deleted. Please try running the game again!")
