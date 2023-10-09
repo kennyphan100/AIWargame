@@ -14,6 +14,8 @@ import os
 MAX_HEURISTIC_SCORE = 2000000000
 MIN_HEURISTIC_SCORE = -2000000000
 
+map = {}
+
 class UnitType(Enum):
     """Every unit type."""
     AI = 0
@@ -542,6 +544,9 @@ class Game:
         if self.stats.total_seconds > 0:
             print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
         print(f"Elapsed time: {elapsed_seconds:0.1f}s")
+        outputFile.write(self.get_cumulative_evals()[1] + "\n")
+        outputFile.write(self.get_cumulative_evals_by_depth() + "\n")
+        outputFile.write(self.get_cumulative_perc_evals() + "\n")
         outputFile.close()
         return move
 
@@ -717,6 +722,7 @@ class Game:
             max_eval = MIN_HEURISTIC_SCORE
             best_move = None
             for move in moves:
+                map[depth] = map.get(depth, 0) + 1
                 temp_game = game.clone()
                 (success, result) = temp_game.perform_move(move)
                 if success:
@@ -737,6 +743,7 @@ class Game:
             min_eval = MAX_HEURISTIC_SCORE
             best_move = None
             for move in moves:
+                map[depth] = map.get(depth, 0) + 1
                 temp_game = game.clone()
                 (success, result) = temp_game.perform_move(move)
                 if success:
@@ -753,6 +760,41 @@ class Game:
                             break
 
             return (min_eval, best_move, 3)
+    
+    def get_cumulative_evals(self) -> Tuple[int, str]:
+        count = 0
+        sorted_map = self.sort_map()
+        for value in sorted_map.values():
+            count += value
+        return (count, "Cumulative evals: " + str(count))
+    
+    def get_cumulative_evals_by_depth(self) -> str:
+        res = ""
+        sorted_map = self.sort_map()
+        last_key = list(sorted_map)[-1]
+        for key, value in sorted_map.items():
+            if last_key == key: 
+                res += str(key) + "=" + str(value)
+            else:
+                res += str(key) + "=" + str(value) + " "
+        return "Cumulative evals by depth: " + res
+    
+    def get_cumulative_perc_evals(self) -> str:
+        res = ""
+        total = self.get_cumulative_evals()[0]
+        sorted_map = self.sort_map()
+        last_key = list(sorted_map)[-1]
+        for key, value in sorted_map.items():
+            if last_key == key:
+                res += str(key) + "=" + str(round(float((value / total) * 100), 1)) + "%"
+            else:
+                res += str(key) + "=" + str(round(float((value / total) * 100), 1)) + "% "
+        return "Cumulative '%' evals by depth: " + res
+    
+    def sort_map(self) -> dict:
+        limit = self.options.max_depth + 1
+        sorted_map = {key: map[limit - key] for key in range(1, limit)}
+        return sorted_map
 
 ##############################################################################################################
 
