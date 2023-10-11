@@ -516,6 +516,18 @@ class Game:
             move.dst = src
             yield move.clone()
 
+    def get_moves_for_player(self, current_player:Player) -> Iterable[CoordPair]:
+        """Generate valid move candidates for the given player."""
+        move = CoordPair()
+        for (src,_) in self.player_units(current_player):
+            move.src = src
+            for dst in src.iter_adjacent():
+                move.dst = dst
+                if self.is_valid_move(move) or self.is_valid_to_attack(move) or self.is_valid_to_repair(move):
+                    yield move.clone()
+            move.dst = src
+            yield move.clone()
+
     def random_move(self) -> Tuple[int, CoordPair | None, float]:
         """Returns a random move."""
         move_candidates = list(self.move_candidates())
@@ -711,11 +723,68 @@ class Game:
 
         return p1_score - p2_score
     
+    # Heuristic e1 - Total number of unit and AI Safety
+    # This heuristic considers the number of units left and evaluates the safety of the unit AI. A player with more units left and an AI unit with fewer threats against it is preferable.
+    def heuristic_e1(self, board: Game, maximizing_player) -> int:
+        p1_ai, p2_ai = 0, 0
+        p1_score, p2_score = 0, 0
+        p1_number_of_unit, p2_number_of_unit = 0, 0
+
+        for coord, unit in board.player_units(maximizing_player):
+            p1_number_of_unit += 1
+            if unit.type == UnitType.AI:
+                p1_ai += 1
+                if (board.is_engaged_in_combat(coord)):
+                    p1_score -= 100
+
+        p1_score += (p1_number_of_unit + 9999 * p1_ai)
+        
+        for coord, unit in board.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
+            p2_number_of_unit += 1
+            if unit.type == UnitType.AI:
+                p2_ai += 1
+                if (board.is_engaged_in_combat(coord)):
+                    p2_score -= 100
+                 
+        p2_score += (p2_number_of_unit + 9999 * p2_ai)
+
+        return p1_score - p2_score
+    
+     # Heuristic e2 - Unit Mobilitiy
+     # This heuristic considers the number of legal moves available to each player. More mobility is generally better.
+    def heuristic_e2(self, board: Game, maximizing_player) -> int:
+        opponent = Player.Attacker if maximizing_player == Player.Defender else Player.Defender
+        ai_p1, ai_p2 = 0, 0
+        p1_score, p2_score = 0, 0
+
+        for coord, unit in board.player_units(maximizing_player):
+            if unit.type == UnitType.AI:
+                ai_p1 += 1
+
+        p1_score += 9999 * ai_p1
+        
+        for coord, unit in board.player_units(opponent):
+            if unit.type == UnitType.AI:
+                ai_p2 += 1
+                 
+        p2_score += 9999 * ai_p2
+
+        number_of_legal_moves_for_maximizing_player = len(list(board.get_moves_for_player(maximizing_player)))
+        number_of_legal_moves_for_opponent_player = len(list(board.get_moves_for_player(opponent)))
+        
+        return (p1_score - p2_score) + (number_of_legal_moves_for_maximizing_player - number_of_legal_moves_for_opponent_player)
+    
+    
     # Minimax Algorithm
     def minimax(self, game : Game, depth, is_maximizing_player, maximizing_player, alpha, beta) -> Tuple[int, CoordPair | None, int]:
         if depth == 0 or game.has_winner():
-            return (self.heuristic_e0(game, maximizing_player), None, 1)
-
+            if self.options.heuristic == "e1":
+                return (self.heuristic_e1(game, maximizing_player), None, 1)
+            elif self.options.heuristic == "e2":
+                return (self.heuristic_e2(game, maximizing_player), None, 1)
+            else:
+                return (self.heuristic_e0(game, maximizing_player), None, 1)
+            
         moves = list(game.move_candidates())
 
         if is_maximizing_player:
