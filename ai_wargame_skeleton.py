@@ -480,6 +480,8 @@ class Game:
                 outputFile.write(f"Computer {self.next_player.name}: {result} from {mv.src.to_string()} to {mv.dst.to_string()}\n\n")
                 outputFile.close()
                 self.next_turn()
+        else:
+            return None
         return mv
 
     def player_units(self, player: Player) -> Iterable[Tuple[Coord,Unit]]:
@@ -543,6 +545,10 @@ class Game:
         start_time = datetime.now()
         (score, move, avg_depth) = self.minimax(self, self.options.max_depth, True, self.next_player, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
+        if elapsed_seconds > self.options.max_time:
+            outputFile.write("The computer took " + str(elapsed_seconds) + " to search, which exceeds the set time limit " + str(self.options.max_time) + ".\n")
+            outputFile.close()
+            return None
         outputFile.write("Time for this action: " + str(elapsed_seconds) + "\n")
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -751,23 +757,31 @@ class Game:
         return p1_score - p2_score
     
      # Heuristic e2 - Unit Mobilitiy
-     # This heuristic considers the number of legal moves available to each player. More mobility is generally better.
+     # This heuristic priortizes certains units pieces such as Virus and Tech because they have more mobility, having these pieces with high mobility is an advantage.
     def heuristic_e2(self, board: Game, maximizing_player) -> int:
         opponent = Player.Attacker if maximizing_player == Player.Defender else Player.Defender
-        ai_p1, ai_p2 = 0, 0
+        ai_p1, ai_p2, virus_p1, virus_p2, tech_p1, tech_p2 = 0, 0, 0, 0, 0, 0
         p1_score, p2_score = 0, 0
 
         for coord, unit in board.player_units(maximizing_player):
             if unit.type == UnitType.AI:
                 ai_p1 += 1
+            if unit.type == UnitType.Virus:
+                virus_p1 += 1
+            if unit.type == UnitType.Tech:
+                tech_p1 += 1
 
-        p1_score += 9999 * ai_p1
+        p1_score += 9999 * ai_p1 + 1000 * virus_p1 + 1000 * tech_p1
         
         for coord, unit in board.player_units(opponent):
             if unit.type == UnitType.AI:
                 ai_p2 += 1
+            if unit.type == UnitType.Virus:
+                virus_p2 += 1
+            if unit.type == UnitType.Tech:
+                tech_p2 += 1
                  
-        p2_score += 9999 * ai_p2
+        p2_score += 9999 * ai_p2 + 1000 * virus_p2 + 1000 * tech_p2
 
         number_of_legal_moves_for_maximizing_player = len(list(board.get_moves_for_player(maximizing_player)))
         number_of_legal_moves_for_opponent_player = len(list(board.get_moves_for_player(opponent)))
@@ -955,7 +969,17 @@ def main():
                 if move is not None:
                     game.post_move_to_broker(move)
                 else:
-                    print("Computer doesn't know what to do!!!")
+                    if outputFile.closed:
+                        outputFile = open(fileName, "a")
+                    print("Computer exceed the time limit to return its moves.")
+                    outputFile.write("Computer exceed the time limit to return its moves." + "\n")
+                    if game.next_player == Player.Attacker:
+                        outputFile.write("Defender won!")
+                        print("Defender won!")
+                    else:
+                        outputFile.write("Attacker won!")
+                        print("Attacker won!")
+                    outputFile.close()
                     exit(1)
             if outputFile.closed:
                 outputFile = open(fileName, "a")
