@@ -15,6 +15,7 @@ MAX_HEURISTIC_SCORE = 2000000000
 MIN_HEURISTIC_SCORE = -2000000000
 
 map = {}
+nb_of_leaf_nodes = 0
 
 class UnitType(Enum):
     """Every unit type."""
@@ -565,6 +566,7 @@ class Game:
         outputFile.write(self.get_cumulative_evals()[1] + "\n")
         outputFile.write(self.get_cumulative_evals_by_depth() + "\n")
         outputFile.write(self.get_cumulative_perc_evals() + "\n")
+        outputFile.write(self.get_avg_branching_factor() + "\n")
         outputFile.close()
         return move
 
@@ -791,7 +793,9 @@ class Game:
     
     # Minimax Algorithm
     def minimax(self, game : Game, depth, is_maximizing_player, maximizing_player, alpha, beta) -> Tuple[int, CoordPair | None, int]:
+        global nb_of_leaf_nodes
         if depth == 0 or game.has_winner():
+            nb_of_leaf_nodes += 1
             if self.options.heuristic == "e1":
                 return (self.heuristic_e1(game, maximizing_player), None, 1)
             elif self.options.heuristic == "e2":
@@ -800,7 +804,7 @@ class Game:
                 return (self.heuristic_e0(game, maximizing_player), None, 1)
             
         moves = list(game.move_candidates())
-
+        
         if is_maximizing_player:
             max_eval = MIN_HEURISTIC_SCORE
             best_move = None
@@ -873,6 +877,13 @@ class Game:
             else:
                 res += str(key) + "=" + str(round(float((value / total) * 100), 1)) + "% "
         return "Cumulative '%' evals by depth: " + res
+    
+    
+    def get_avg_branching_factor(self) -> str:
+        nb_of_non_root_nodes = self.get_cumulative_evals()[0] - 1
+        nb_of_non_leaf_nodes = self.get_cumulative_evals()[0] - nb_of_leaf_nodes
+        avg_branching_factor = round(float(nb_of_non_root_nodes / nb_of_non_leaf_nodes), 2)
+        return "Average branching factor: " + str(avg_branching_factor)
     
     def sort_map(self) -> dict:
         limit = self.options.max_depth + 1
