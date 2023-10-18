@@ -695,11 +695,11 @@ class Game:
         return fileName
     
     # Heuristic e0
-    def heuristic_e0(self, board: Game, maximizing_player) -> int:
+    def heuristic_e0(self, game: Game, maximizing_player) -> int:
         virus_p1, tech_p1, firewall_p1, program_p1, ai_p1 = 0, 0, 0, 0, 0
         virus_p2, tech_p2, firewall_p2, program_p2, ai_p2 = 0, 0, 0, 0, 0
         
-        for coord, unit in board.player_units(maximizing_player):
+        for coord, unit in game.player_units(maximizing_player):
             if unit.type == UnitType.Virus:
                 virus_p1 += 1
             elif unit.type == UnitType.Tech:
@@ -714,7 +714,7 @@ class Game:
         p1_score = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1)) + (9999 * ai_p1)
         
         # Counting the number of different type of units of the opposite player
-        for coord, unit in board.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
+        for coord, unit in game.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
             if unit.type == UnitType.Virus:
                 virus_p2 += 1
             elif unit.type == UnitType.Tech:
@@ -732,25 +732,25 @@ class Game:
     
     # Heuristic e1 - Total number of unit and AI Safety
     # This heuristic considers the number of units left and evaluates the safety of the unit AI. A player with more units left and an AI unit with fewer threats against it is preferable.
-    def heuristic_e1(self, board: Game, maximizing_player) -> int:
+    def heuristic_e1(self, game: Game, maximizing_player) -> int:
         p1_ai, p2_ai = 0, 0
         p1_score, p2_score = 0, 0
         p1_number_of_unit, p2_number_of_unit = 0, 0
 
-        for coord, unit in board.player_units(maximizing_player):
+        for coord, unit in game.player_units(maximizing_player):
             p1_number_of_unit += 1
             if unit.type == UnitType.AI:
                 p1_ai += 1
-                if (board.is_engaged_in_combat(coord)):
+                if (game.is_engaged_in_combat(coord)):
                     p1_score -= 100
 
         p1_score += (p1_number_of_unit + 9999 * p1_ai)
         
-        for coord, unit in board.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
+        for coord, unit in game.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
             p2_number_of_unit += 1
             if unit.type == UnitType.AI:
                 p2_ai += 1
-                if (board.is_engaged_in_combat(coord)):
+                if (game.is_engaged_in_combat(coord)):
                     p2_score -= 100
                  
         p2_score += (p2_number_of_unit + 9999 * p2_ai)
@@ -759,12 +759,12 @@ class Game:
     
      # Heuristic e2 - Unit Mobilitiy
      # This heuristic priortizes certains units pieces such as Virus and Tech because they have more mobility, having these pieces with high mobility is an advantage.
-    def heuristic_e2(self, board: Game, maximizing_player) -> int:
+    def heuristic_e2(self, game: Game, maximizing_player) -> int:
         opponent = Player.Attacker if maximizing_player == Player.Defender else Player.Defender
         ai_p1, ai_p2, virus_p1, virus_p2, tech_p1, tech_p2 = 0, 0, 0, 0, 0, 0
         p1_score, p2_score = 0, 0
 
-        for coord, unit in board.player_units(maximizing_player):
+        for coord, unit in game.player_units(maximizing_player):
             if unit.type == UnitType.AI:
                 ai_p1 += 1
             if unit.type == UnitType.Virus:
@@ -774,7 +774,7 @@ class Game:
 
         p1_score += 9999 * ai_p1 + 1000 * virus_p1 + 1000 * tech_p1
         
-        for coord, unit in board.player_units(opponent):
+        for coord, unit in game.player_units(opponent):
             if unit.type == UnitType.AI:
                 ai_p2 += 1
             if unit.type == UnitType.Virus:
@@ -784,23 +784,27 @@ class Game:
                  
         p2_score += 9999 * ai_p2 + 1000 * virus_p2 + 1000 * tech_p2
 
-        number_of_legal_moves_for_maximizing_player = len(list(board.get_moves_for_player(maximizing_player)))
-        number_of_legal_moves_for_opponent_player = len(list(board.get_moves_for_player(opponent)))
+        number_of_legal_moves_for_maximizing_player = len(list(game.get_moves_for_player(maximizing_player)))
+        number_of_legal_moves_for_opponent_player = len(list(game.get_moves_for_player(opponent)))
         
         return (p1_score - p2_score) + (number_of_legal_moves_for_maximizing_player - number_of_legal_moves_for_opponent_player)
     
-    
+    def calculate_heuristic(self, game, maximizing_player):
+        if self.options.heuristic == "e1":
+            return self.heuristic_e1(game, maximizing_player)
+        elif self.options.heuristic == "e2":
+            return self.heuristic_e2(game, maximizing_player)
+        else:
+            return self.heuristic_e0(game, maximizing_player)
+
     # Minimax Algorithm
-    def minimax(self, game : Game, depth, is_maximizing_player, maximizing_player, alpha, beta) -> Tuple[int, CoordPair | None, int]:
+    def minimax(self, game: Game, depth: int, is_maximizing_player: bool, maximizing_player: Player, alpha: int, beta: int) -> Tuple[int, CoordPair | None]:
         global nb_of_leaf_nodes
+
         if depth == 0 or game.has_winner():
             nb_of_leaf_nodes += 1
-            if self.options.heuristic == "e1":
-                return (self.heuristic_e1(game, maximizing_player), None)
-            elif self.options.heuristic == "e2":
-                return (self.heuristic_e2(game, maximizing_player), None)
-            else:
-                return (self.heuristic_e0(game, maximizing_player), None)
+            heuristic_score = self.calculate_heuristic(game, maximizing_player)
+            return (heuristic_score, None)
             
         moves = list(game.move_candidates())
         
