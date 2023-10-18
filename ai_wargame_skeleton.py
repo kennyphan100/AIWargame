@@ -544,7 +544,7 @@ class Game:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         outputFile = open(fileName, "a")
         start_time = datetime.now()
-        (score, move, avg_depth) = self.minimax(self, self.options.max_depth, True, self.next_player, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE)
+        (score, move) = self.minimax(self, self.options.max_depth, True, self.next_player, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         if elapsed_seconds > self.options.max_time:
             outputFile.write("The computer took " + str(elapsed_seconds) + " to search, which exceeds the set time limit " + str(self.options.max_time) + ".\n")
@@ -554,7 +554,6 @@ class Game:
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
         outputFile.write("Heuristic Score: " + str(score) + "\n")
-        print(f"Average recursive depth: {avg_depth:0.1f}")
         print(f"Evals per depth: ",end='')
         for k in sorted(self.stats.evaluations_per_depth.keys()):
             print(f"{k}:{self.stats.evaluations_per_depth[k]} ",end='')
@@ -712,7 +711,7 @@ class Game:
             elif unit.type == UnitType.AI:
                 ai_p1 += 1
 
-        p1_score = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1) + 9999 * ai_p1)
+        p1_score = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1)) + (9999 * ai_p1)
         
         # Counting the number of different type of units of the opposite player
         for coord, unit in board.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
@@ -727,7 +726,7 @@ class Game:
             elif unit.type == UnitType.AI:
                 ai_p2 += 1
                  
-        p2_score = (3 * (virus_p2 + tech_p2 + firewall_p2 + program_p2) + 9999 * ai_p2)
+        p2_score = (3 * (virus_p2 + tech_p2 + firewall_p2 + program_p2)) + (9999 * ai_p2)
 
         return p1_score - p2_score
     
@@ -797,11 +796,11 @@ class Game:
         if depth == 0 or game.has_winner():
             nb_of_leaf_nodes += 1
             if self.options.heuristic == "e1":
-                return (self.heuristic_e1(game, maximizing_player), None, 1)
+                return (self.heuristic_e1(game, maximizing_player), None)
             elif self.options.heuristic == "e2":
-                return (self.heuristic_e2(game, maximizing_player), None, 1)
+                return (self.heuristic_e2(game, maximizing_player), None)
             else:
-                return (self.heuristic_e0(game, maximizing_player), None, 1)
+                return (self.heuristic_e0(game, maximizing_player), None)
             
         moves = list(game.move_candidates())
         
@@ -825,7 +824,7 @@ class Game:
                         if beta <= alpha:
                             break
 
-            return (max_eval, best_move, 2)
+            return (max_eval, best_move)
         else:
             min_eval = MAX_HEURISTIC_SCORE
             best_move = None
@@ -846,7 +845,7 @@ class Game:
                         if beta <= alpha:
                             break
 
-            return (min_eval, best_move, 3)
+            return (min_eval, best_move)
     
     def get_cumulative_evals(self) -> Tuple[int, str]:
         count = 0
