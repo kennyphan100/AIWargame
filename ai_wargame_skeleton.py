@@ -883,8 +883,11 @@ class Game:
     
     
     def get_avg_branching_factor(self) -> str:
-        nb_of_non_root_nodes = self.get_cumulative_evals()[0] - 1
-        nb_of_non_leaf_nodes = self.get_cumulative_evals()[0] - nb_of_leaf_nodes
+        nb_of_non_root_nodes = self.get_cumulative_evals()[0]
+        if self.options.max_depth == 1:
+            nb_of_non_leaf_nodes = 1
+        else:
+            nb_of_non_leaf_nodes = self.get_cumulative_evals()[0] - nb_of_leaf_nodes + 1
         avg_branching_factor = round(float(nb_of_non_root_nodes / nb_of_non_leaf_nodes), 2)
         return "Average branching factor: " + str(avg_branching_factor)
     
