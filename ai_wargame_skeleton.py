@@ -16,6 +16,8 @@ MIN_HEURISTIC_SCORE = -2000000000
 
 map = {}
 nb_of_leaf_nodes = 0
+start_time = datetime.now()
+buffer_time = 0.01
 
 class UnitType(Enum):
     """Every unit type."""
@@ -542,6 +544,7 @@ class Game:
 
     def suggest_move(self, fileName) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
+        global start_time
         outputFile = open(fileName, "a")
         start_time = datetime.now()
         (score, move) = self.minimax(self, self.options.max_depth, True, self.next_player, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE)
@@ -800,8 +803,11 @@ class Game:
     # Minimax Algorithm
     def minimax(self, game: Game, depth: int, is_maximizing_player: bool, maximizing_player: Player, alpha: int, beta: int) -> Tuple[int, CoordPair | None]:
         global nb_of_leaf_nodes
+        global elapsed_time
 
-        if depth == 0 or game.has_winner():
+        elapsed_time = (datetime.now() - start_time).total_seconds()
+
+        if depth == 0 or game.has_winner() or (elapsed_time + buffer_time >= game.options.max_time):
             nb_of_leaf_nodes += 1
             heuristic_score = self.calculate_heuristic(game, maximizing_player)
             return (heuristic_score, None)
