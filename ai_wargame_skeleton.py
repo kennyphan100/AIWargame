@@ -697,6 +697,12 @@ class Game:
         fileName = "gameTrace" + "-" + b + "-" + t + "-" + m + ".txt"
         return fileName
     
+    def get_total_health(self, state: Game, player : Player) -> int:
+        total_health = 0
+        for _, unit in state.player_units(player):
+            total_health += unit.health
+        return total_health
+    
     # Heuristic e0
     def heuristic_e0(self, game: Game, maximizing_player) -> int:
         virus_p1, tech_p1, firewall_p1, program_p1, ai_p1 = 0, 0, 0, 0, 0
@@ -760,37 +766,27 @@ class Game:
 
         return p1_score - p2_score
     
-     # Heuristic e2 - Unit Mobilitiy
-     # This heuristic priortizes certains units pieces such as Virus and Tech because they have more mobility, having these pieces with high mobility is an advantage.
+    #Heuristic function
+    #This heuristic considers the total health of each player for a state of a game. A player with more health has an advantage over his opponent.
     def heuristic_e2(self, game: Game, maximizing_player) -> int:
-        opponent = Player.Attacker if maximizing_player == Player.Defender else Player.Defender
-        ai_p1, ai_p2, virus_p1, virus_p2, tech_p1, tech_p2 = 0, 0, 0, 0, 0, 0
-        p1_score, p2_score = 0, 0
+        p1_ai, p2_ai = 0, 0
 
-        for coord, unit in game.player_units(maximizing_player):
-            if unit.type == UnitType.AI:
-                ai_p1 += 1
-            if unit.type == UnitType.Virus:
-                virus_p1 += 1
-            if unit.type == UnitType.Tech:
-                tech_p1 += 1
-
-        p1_score += 9999 * ai_p1 + 1000 * virus_p1 + 1000 * tech_p1
+        p1_score = self.get_total_health(game, maximizing_player)
+        p2_score = self.get_total_health(game, Player.Attacker if maximizing_player == Player.Defender else Player.Defender)
         
-        for coord, unit in game.player_units(opponent):
+        for _, unit in game.player_units(maximizing_player):
             if unit.type == UnitType.AI:
-                ai_p2 += 1
-            if unit.type == UnitType.Virus:
-                virus_p2 += 1
-            if unit.type == UnitType.Tech:
-                tech_p2 += 1
+                p1_ai += 1
+
+        p1_score += (9999 * p1_ai)
+        
+        for _, unit in game.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
+            if unit.type == UnitType.AI:
+                p2_ai += 1
                  
-        p2_score += 9999 * ai_p2 + 1000 * virus_p2 + 1000 * tech_p2
+        p2_score += (9999 * p2_ai)
 
-        number_of_legal_moves_for_maximizing_player = len(list(game.get_moves_for_player(maximizing_player)))
-        number_of_legal_moves_for_opponent_player = len(list(game.get_moves_for_player(opponent)))
-        
-        return (p1_score - p2_score) + (number_of_legal_moves_for_maximizing_player - number_of_legal_moves_for_opponent_player)
+        return (p1_score - p2_score)
     
     def calculate_heuristic(self, game, maximizing_player):
         if self.options.heuristic == "e1":
