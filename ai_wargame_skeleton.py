@@ -14,7 +14,7 @@ import os
 MAX_HEURISTIC_SCORE = 2000000000
 MIN_HEURISTIC_SCORE = -2000000000
 
-map = {}
+cumulative_information = {}
 nb_of_leaf_nodes = 0
 start_time = datetime.now()
 buffer_time = 0.01
@@ -557,14 +557,14 @@ class Game:
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
         outputFile.write("Heuristic Score: " + str(score) + "\n")
-        print(f"Evals per depth: ",end='')
+        print(self.get_cumulative_evals_by_depth())
         for k in sorted(self.stats.evaluations_per_depth.keys()):
             print(f"{k}:{self.stats.evaluations_per_depth[k]} ",end='')
         print()
         total_evals = sum(self.stats.evaluations_per_depth.values())
-        if self.stats.total_seconds > 0:
-            print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
-        print(f"Elapsed time: {elapsed_seconds:0.1f}s")
+        # if self.stats.total_seconds > 0:
+        #     print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
+        print("\033[AElapsed time: " + str(round(elapsed_seconds, 1)))
         outputFile.write(self.get_cumulative_evals()[1] + "\n")
         outputFile.write(self.get_cumulative_evals_by_depth() + "\n")
         outputFile.write(self.get_cumulative_perc_evals() + "\n")
@@ -703,12 +703,13 @@ class Game:
             total_health += unit.health
         return total_health
     
-    # Heuristic e0
+    # Heuristic e0 - Weighted heuristic
+    # This heuristic considers the number of units of each player and puts a specific weight on them. Since the AI is the most important unit, it has a very high weight.
     def heuristic_e0(self, game: Game, maximizing_player) -> int:
         virus_p1, tech_p1, firewall_p1, program_p1, ai_p1 = 0, 0, 0, 0, 0
         virus_p2, tech_p2, firewall_p2, program_p2, ai_p2 = 0, 0, 0, 0, 0
         
-        for coord, unit in game.player_units(maximizing_player):
+        for _, unit in game.player_units(maximizing_player):
             if unit.type == UnitType.Virus:
                 virus_p1 += 1
             elif unit.type == UnitType.Tech:
@@ -723,7 +724,7 @@ class Game:
         p1_score = (3 * (virus_p1 + tech_p1 + firewall_p1 + program_p1)) + (9999 * ai_p1)
         
         # Counting the number of different type of units of the opposite player
-        for coord, unit in game.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
+        for _, unit in game.player_units(Player.Attacker if maximizing_player == Player.Defender else Player.Defender):
             if unit.type == UnitType.Virus:
                 virus_p2 += 1
             elif unit.type == UnitType.Tech:
@@ -740,7 +741,7 @@ class Game:
         return p1_score - p2_score
     
     # Heuristic e1 - Total number of unit and AI Safety
-    # This heuristic considers the number of units left and evaluates the safety of the unit AI. A player with more units left and an AI unit with fewer threats against it is preferable.
+    # This heuristic considers the number of units left of each player and evaluates the safety of the AI unit. A player with more units left and an AI unit that is not engaged in combat is preferable.
     def heuristic_e1(self, game: Game, maximizing_player) -> int:
         p1_ai, p2_ai = 0, 0
         p1_score, p2_score = 0, 0
@@ -766,12 +767,14 @@ class Game:
 
         return p1_score - p2_score
     
-    #Heuristic function
-    #This heuristic considers the total health of each player for a state of a game. A player with more health has an advantage over his opponent.
+    # Heuristic function - Total health tracker
+    # This heuristic considers the total health of each player for a state of a game. A player with more health has an advantage over his opponent.
     def heuristic_e2(self, game: Game, maximizing_player) -> int:
         p1_ai, p2_ai = 0, 0
 
+        # Total health of the maximizing player
         p1_score = self.get_total_health(game, maximizing_player)
+        # Total health of the oppponent
         p2_score = self.get_total_health(game, Player.Attacker if maximizing_player == Player.Defender else Player.Defender)
         
         for _, unit in game.player_units(maximizing_player):
@@ -797,56 +800,62 @@ class Game:
             return self.heuristic_e0(game, maximizing_player)
 
     # Minimax Algorithm
-    def minimax(self, game: Game, depth: int, is_maximizing_player: bool, maximizing_player: Player, alpha: int, beta: int) -> Tuple[int, CoordPair | None]:
+    def minimax(self, state: Game, depth: int, is_maximizing_player: bool, maximizing_player: Player, alpha: int, beta: int) -> Tuple[int, CoordPair | None]:
         global nb_of_leaf_nodes
         global elapsed_time
 
+        # Tracking the time
         elapsed_time = (datetime.now() - start_time).total_seconds()
 
-        if depth == 0 or game.has_winner() or (elapsed_time + buffer_time >= game.options.max_time):
+        # n-ply look ahead
+        if depth == 0 or state.has_winner() or (elapsed_time + buffer_time >= state.options.max_time):
             nb_of_leaf_nodes += 1
-            heuristic_score = self.calculate_heuristic(game, maximizing_player)
+            heuristic_score = self.calculate_heuristic(state, maximizing_player)
             return (heuristic_score, None)
-            
-        moves = list(game.move_candidates())
+        
+        # Getting all the valid moves of the current player
+        moves = list(state.move_candidates())
         
         if is_maximizing_player:
             max_eval = MIN_HEURISTIC_SCORE
             best_move = None
             for move in moves:
-                map[depth] = map.get(depth, 0) + 1
-                temp_game = game.clone()
-                (success, result) = temp_game.perform_move(move)
+                cumulative_information[depth] = cumulative_information.get(depth, 0) + 1
+                temp_state = state.clone()
+                (success, _) = temp_state.perform_move(move)
                 if success:
-                    temp_game.next_turn()
-                    current_eval = self.minimax(temp_game, depth-1, False, maximizing_player, alpha, beta)[0]
+                    temp_state.next_turn()
+                    current_eval = self.minimax(temp_state, depth-1, False, maximizing_player, alpha, beta)[0]
 
                     if current_eval > max_eval:
                         max_eval = current_eval
                         best_move = move
                     
-                    if game.options.alpha_beta:
+                    # Alpha-beta pruning
+                    if state.options.alpha_beta:
                         alpha = max(alpha, current_eval)
                         if beta <= alpha:
                             break
-
+                        
             return (max_eval, best_move)
+        
         else:
             min_eval = MAX_HEURISTIC_SCORE
             best_move = None
             for move in moves:
-                map[depth] = map.get(depth, 0) + 1
-                temp_game = game.clone()
-                (success, result) = temp_game.perform_move(move)
+                cumulative_information[depth] = cumulative_information.get(depth, 0) + 1
+                temp_state = state.clone()
+                (success, _) = temp_state.perform_move(move)
                 if success:
-                    temp_game.next_turn()
-                    current_eval = self.minimax(temp_game, depth-1, True, maximizing_player, alpha, beta)[0]
+                    temp_state.next_turn()
+                    current_eval = self.minimax(temp_state, depth-1, True, maximizing_player, alpha, beta)[0]
                     
                     if current_eval < min_eval:
                         min_eval = current_eval
                         best_move = move
                     
-                    if game.options.alpha_beta:
+                    # Alpha-beta pruning
+                    if state.options.alpha_beta:
                         beta = min(beta, current_eval)
                         if beta <= alpha:
                             break
@@ -895,7 +904,7 @@ class Game:
     
     def sort_map(self) -> dict:
         limit = self.options.max_depth + 1
-        sorted_map = {key: map[limit - key] for key in range(1, limit)}
+        sorted_map = {key: cumulative_information[limit - key] for key in range(1, limit)}
         return sorted_map
 
 ##############################################################################################################
@@ -911,7 +920,7 @@ def main():
         parser.add_argument('max_turns', type=int, help='maximum number of turns')
         parser.add_argument('alpha_beta', type=str.lower, help='whether alpha-beta is on or off')
         parser.add_argument('game_type', type=str, default="manual", help='game type: auto|attacker|defender|manual')
-        parser.add_argument('--heuristic', type=str, default="e0", help='heuristic: e0|e1|e1')
+        parser.add_argument('heuristic', type=str, default="e0", help='heuristic: e0|e1|e2')
         parser.add_argument('--broker', type=str, help='play via a game broker')
         args = parser.parse_args()
 
