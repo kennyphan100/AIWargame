@@ -561,9 +561,6 @@ class Game:
         for k in sorted(self.stats.evaluations_per_depth.keys()):
             print(f"{k}:{self.stats.evaluations_per_depth[k]} ",end='')
         print()
-        total_evals = sum(self.stats.evaluations_per_depth.values())
-        # if self.stats.total_seconds > 0:
-        #     print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
         print("\033[AElapsed time: " + str(round(elapsed_seconds, 1)))
         outputFile.write(self.get_cumulative_evals()[1] + "\n")
         outputFile.write(self.get_cumulative_evals_by_depth() + "\n")
@@ -767,7 +764,7 @@ class Game:
 
         return p1_score - p2_score
     
-    # Heuristic function - Total health tracker
+    # Heuristic e2 - Total health tracker
     # This heuristic considers the total health of each player for a state of a game. A player with more health has an advantage over his opponent.
     def heuristic_e2(self, game: Game, maximizing_player) -> int:
         p1_ai, p2_ai = 0, 0
