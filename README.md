@@ -1,7 +1,7 @@
 # AIWargame
 
 ## Objective
-To finish implementing the AI Wargame given the skeleton code and implement minimax, alpha-beta and develop adversarial heuristics.
+Implement the AI Wargame, and implement minimax, alpha-beta and develop adversarial heuristics.
 
 ## Description
 AI Wargame is a 2-player game played by an attacker and a defender on a 5 × 5 board. 
